@@ -1,14 +1,15 @@
 # ScanSegmentAPI
 
-This project contains scripts written in Python which receive and parse scan segments from SICK LiDAR sensors, either in the Compact or in the MSGPACK format.
+This project contains scripts written in Python which receive and parse scan segments from SICK LiDAR sensors, either in the Compact or in the MSGPACK format. The transport protocols UDP and TCP are supported.
 
 The following product families are currently supported:
 - multiScan100 (e.g. 1131164)
 - picoScan100 (e.g. 1134610)
+- LRS4000 (e.g. 1098855)
 
-The scripts which do the actual parsing are located in `api/msgpack.py` and `api/compact.py` respectively. They are written and documented with the intention to support the understanding of the two data formats. The scripts are not optimized for performance and not intended to be used in productive code.
+The scripts which do the actual parsing are located in `scansegmentapi/msgpack.py` and `scansegmentapi/compact.py` respectively. They are written and documented with the intention to support the understanding of the two data formats. The scripts are not optimized for performance and not intended to be used in productive code.
 
-To quickly test that data from a SICK LiDAR sensor is received successfully on your client, the [command line tool](#using-the-command-line-interface) `scansegmentapi.py` can be used. Hints for the configuration of the sensor and the network of the client PC can be found [here](#hints-on-sensor-and-network-configuration).
+To quickly test that data from a SICK LiDAR sensor is received successfully on your client, the [command line tool](#using-the-command-line-interface) `scansegmentapi_cli.py` can be used. Hints for the configuration of the sensor and the network of the client PC can be found [here](#hints-on-sensor-and-network-configuration).
 
 To use the parsers in a python script, this package can simply be imported as shown in the [examples below](#using-the-scansegmentapi-from-python).
 
@@ -28,7 +29,7 @@ To install the project dependencies run:
 $ poetry install
 ```
 
-## Using the command-line interface scansegmentapi.py
+## Executing Python scripts in a Poetry environment
 
 In general all Python scripts must be executed via Poetry either in a single command:
 
@@ -47,25 +48,27 @@ $ python <script2>
 $ ...
 ```
 
+## Using the command-line interface scansegmentapi_cli.py
+
 You can always view help with the built-in help option `--help, -h`:
 
 ```bash
-$ poetry run python scansegmentapi.py -h
+$ poetry run python scansegmentapi_cli.py -h
 ```
 
 This will display a list of the available subcommands. Further help on the subcommands and their options can be retrieved
 using:
 
 ```bash
-$ poetry run python scansegmentapi.py <subcommand> -h
+$ poetry run python scansegmentapi_cli.py <subcommand> -h
 ```
 
 If no device is at hand, one of the provided sample files can be used to test if the project was correctly set up using
 the `read` subcommand.
 
 ```bash
-$ poetry run python scansegmentapi.py read msgpack -i ./tests/sample_files/sample.msgpack
-$ poetry run python scansegmentapi.py read compact -i ./tests/sample_files/sample.compact
+$ poetry run python scansegmentapi_cli.py read msgpack -i ./tests/sample_files/sample.msgpack
+$ poetry run python scansegmentapi_cli.py read compact -i ./tests/sample_files/sample.compact
 ```
 
 ### Receiving data from a device
@@ -73,49 +76,72 @@ $ poetry run python scansegmentapi.py read compact -i ./tests/sample_files/sampl
 To receive segments sent by a SICK Lidar sensor the `receive` subcommand has to be used as follows:
 
 ```bash
-$ poetry run python scansegmentapi.py receive compact # or 'msgpack' respectively.
+$ poetry run python scansegmentapi_cli.py receive compact # or 'msgpack' respectively.
 ```
 
-By default this command listens on
-`localhost` at port `2115` for incoming data. If the device is located in a different subnetwork the host address to
-use for listening can be changed using the `--host` command-line option. Note that the host address is the ip address of the network adapter of the client PC, not of the sensor. The port can be changed using `-p` or `--port`
-flag:
+By default this command listens on `localhost` at port `2115` for incoming data via UDP.
+If the device is located in a different subnetwork the ip address to use for listening can be changed using the `--ip` command-line option.
+Note that depending on the transport protocol, the ip address is the ip address of the network adapter of the client PC, if UDP is used, or the ip address of the sensor, if TCP is used.
 
+The port can be changed using `-p` or `--port` flag:
 ```bash
-$ poetry run python scansegmentapi.py receive compact --host 192.168.0.100 --port 2115 # or 'msgpack' respectively.
+$ poetry run python scansegmentapi_cli.py receive compact --ip 192.168.0.100 --port 2115
 ```
+
+The transport protocol can be selected between UDP and TCP using the `--protocol` argument.
+The default is UDP.
+For the protocols supported by your device refer to the manual.
 
 
 ## Using the ScanSegmentAPI from Python
 To receive data from a SICK Lidar sensor in a Python script, the ScanSegmentAPI can be imported and the parsers can be instantiated.
 
-Example for MSGPACK where the address `192.168.0.100` is the ip address of the network adapter of the client PC (not of the sensor!) and `2115` is the used port.
+Example for MSGPACK via UDP where the address `192.168.0.100` is the ip address of the network adapter of the client PC (not of the sensor!) and `2115` is the used port.
 
 ```python
-import scansegmentapi.api.msgpack as MSGPACKApi
+import scansegmentapi.scansegmentapi.msgpack as MSGPACKApi
+from scansegmentapi.scansegmentapi.udp_handler import UDPHandler
 
 if __name__ == "__main__":
-    receiver = MSGPACKApi.Receiver(port=2115, host="192.168.0.100")
-    (segments, frameNumbers, segmentCounters) = receiver.receiveSegments(200)
-    receiver.closeConnection()
+    transportLayer = UDPHandler("192.168.0.100", 2115, 65535)
+    receiver = MSGPACKApi.Receiver(transportLayer)
+    (segments, frameNumbers, segmentCounters) = receiver.receive_segments(200)
+    receiver.close_connection()
 
 ```
 
-Example for Compact where the address `192.168.0.100` is the ip address of the network adapter of the client PC (not of the sensor!) and `2115` is the used port.
+Example for Compact via UDP where the address `192.168.0.100` is the ip address of the network adapter of the client PC (not of the sensor!) and `2115` is the used port.
 
 ```python
-import scansegmentapi.api.compact as CompactApi
+import scansegmentapi.scansegmentapi.compact as CompactApi
+from scansegmentapi.scansegmentapi.udp_handler import UDPHandler
 
 if __name__ == "__main__":
-    receiver = CompactApi.Receiver(port=2115, host="192.168.0.100")
-    (segments, frameNumbers, segmentCounters) = receiver.receiveSegments(200)
-    receiver.closeConnection()
+    transportLayer = UDPHandler("192.168.0.100", 2115, 65535)
+    receiver = CompactApi.Receiver(transportLayer)
+    (segments, frameNumbers, segmentCounters) = receiver.receive_segments(200)
+    receiver.close_connection()
+```
+
+Example for Compact via TCP where the address `192.168.0.1` is the ip address of the sensor (not of the client PC!) and `2115` is the used port of the sensor.
+
+```python
+import scansegmentapi.scansegmentapi.compact as CompactApi
+from scansegmentapi.scansegmentapi.tcp_handler import TCPHandler
+from scansegmentapi.scansegmentapi.compact_stream_extractor import CompactStreamExtractor
+
+if __name__ == "__main__":
+    streamExtractor = CompactStreamExtractor()
+    transportLayer = TCPHandler(streamExtractor, "192.168.0.100", 2115, 1024)
+    receiver = CompactApi.Receiver(transportLayer)
+    (segments, frameNumbers, segmentCounters) = receiver.receive_segments(200)
+    receiver.close_connection()
 ```
 
 ---
 **NOTE**
 
-The above snippets assume that code of the ScanSegmentAPI is located in a subdirectory of the current working directory named `scansegmentapi`. If you place your code directly in the directory with the ScanSegmentAPI code for example, the import statement has to be modified to `import api.msgpack` and `import api.compact` respectively.
+The above snippets assume that the code of the ScanSegmentAPI is located in a subdirectory of the current working directory named `scansegmentapi`. If you place your code directly in the directory with the ScanSegmentAPI code for example, the import statement has to be modified to `import scansegmentapi.msgpack` and `import scansegmentapi.compact` respectively.
 
 ---
 
@@ -177,14 +203,16 @@ DistanceScanlingFactor                              | segment["Modules"][*M*]["D
 
 If no data can be received from a SICK Lidar sensor or errors are reported in the data stream, here are some hints how to solve common problems.
 
-### Configure correct IP adress and port
-If no data is received at all, make sure that the correct port and the correct IP address of the client PC are configured on the sensor.
+### Configure correct IP address and port
+If no data is received at all when using UDP, make sure that the correct port and the correct IP address of the client PC are configured on the sensor.
 
 <img src="doc/port_and_ip_on_the_sensor.png" width="350"/>
 
+If no data is received at all when using TCP, make sure that the correct port and the correct IP address of of the sensor is configured in the python script.
+
 ### Set network category to 'Private'
 
-On Windows PCs the network category of the used network adapter has to be configured to 'Private'. To do so, open the Windows Powershell with administrator privileges and check the network category and the interface index of the network adapter which is used for communication with the Lidar sensor.
+If UDP is used as the transport protocol on Windows PCs the network category of the used network adapter may need to be configured to 'Private'. To do so, open the Windows Powershell with administrator privileges and check the network category and the interface index of the network adapter which is used for communication with the Lidar sensor.
 
 <img src="doc/get_net_connection_profile.png" width="350"/>
 
@@ -194,18 +222,29 @@ Then set the network category to 'Private' for the corresponding interface using
 `Set-NetConnectionProfile -InterfaceIndex <index as retrived> -NetworkCategory Private`
 
 ### Configure correct data format
-If data is received but a CRC check error is shown as output of the Python script, a reason might be that the wrong output data format is configured on the sensor. Make sure that MSGPACK output is configured when using the MSGPACK Python api and Compact is configured when using the Compact Python API.
+If data is received but a CRC check error is shown as output of the Python script, a reason might be that the wrong output data format is configured on the sensor. Make sure that MSGPACK output is configured when using the MSGPACK Python API and Compact is configured when using the Compact Python API.
 
 <img src="doc/format_selection_on_the_sensor.png" width="350"/>
 
 ## Jupyter Notebook support in Visual Studio Code
 
-In order to use the api inside Jupyter notebooks executed inside Visual Studio Code the appropriate virtual environment
+In order to use the scansegmentapi inside Jupyter notebooks executed inside Visual Studio Code the appropriate virtual environment
 has to be selected as shown in the image below:
 
 <img src="doc/poetry_jupyter.png" width="700"/>
 
-In many cases, Visual Stuio Code recognizes the correct virtual environment by itself.
+In many cases, Visual Studio Code recognizes the correct virtual environment by itself.
+
+## Extracting data packages from a TCP stream
+In the case of UDP the extraction of the data from the UDP packet is straight forward because each UDP packet contains at most one measurement data package. In the case of TCP the measurement data packages have to be extracted from the TCP stream. In other words the TCP stream has to be split up into separate measurement data packages. For the Compact and MSGPACK protocol the data packages start with a delimiter and end with a checksum. The extraction of data packages from the TCP stream is implemented using state machines.
+
+The state machine for the Compact format:
+
+![Compact State Machine](doc/statemachine_compact.svg)
+
+The state machine for the MSGPACK format:
+
+![Msgpack State Machine](doc/statemachine_msgpack.svg)
 
 ## Dependencies
 
@@ -213,20 +252,18 @@ This module relies on the following dependencies which are downloaded during the
 
 | Name               | Version   | License                                                 | URL                                          |
 |--------------------|-----------|---------------------------------------------------------|----------------------------------------------|
-| certifi            | 2023.7.22 | [Mozilla Public License 2.0 (MPL 2.0)](https://mozilla.org/MPL/2.0/)     | https://github.com/certifi/python-certifi    |
-| charset-normalizer | 3.3.0     | [MIT License](https://spdx.org/licenses/MIT.html)                        | https://github.com/Ousret/charset_normalizer |
+| certifi            | 2024.8.30 | [Mozilla Public License 2.0 (MPL 2.0)](https://mozilla.org/MPL/2.0/)     | https://github.com/certifi/python-certifi    |
+| charset-normalizer | 3.3.2     | [MIT License](https://spdx.org/licenses/MIT.html)                        | https://github.com/Ousret/charset_normalizer |
 | colorama           | 0.4.6     | [BSD-3-Clause License](https://spdx.org/licenses/BSD-3-Clause.html)      | https://github.com/tartley/colorama          |
-| coverage           | 7.3.2     | [Apache-2.0 License](http://www.apache.org/licenses/LICENSE-2.0)         | https://github.com/nedbat/coveragepy         |
-| exceptiongroup     | 1.1.3     | [MIT License](https://spdx.org/licenses/MIT.html)                        | https://github.com/agronholm/exceptiongroup  |
-| idna               | 3.4       | [BSD-3-Clause License](https://spdx.org/licenses/BSD-3-Clause.html)      | https://github.com/kjd/idna                  |
+| coverage           | 7.6.1     | [Apache-2.0 License](http://www.apache.org/licenses/LICENSE-2.0)         | https://github.com/nedbat/coveragepy         |
+| exceptiongroup     | 1.2.2     | [MIT License](https://spdx.org/licenses/MIT.html)                        | https://github.com/agronholm/exceptiongroup  |
+| idna               | 3.10      | [BSD-3-Clause License](https://spdx.org/licenses/BSD-3-Clause.html)      | https://github.com/kjd/idna                  |
 | iniconfig          | 2.0.0     | [MIT License](https://spdx.org/licenses/MIT.html)                        | https://github.com/pytest-dev/iniconfig      |
-| msgpack            | 1.0.7     | [Apache-2.0 License](http://www.apache.org/licenses/LICENSE-2.0)         | https://msgpack.org/                         |
-| numpy              | 1.25.2    | [BSD-3-Clause License](https://spdx.org/licenses/BSD-3-Clause.html)      | https://www.numpy.org                        |
-| packaging          | 23.2      | [Apache-2.0 License](http://www.apache.org/licenses/LICENSE-2.0); [BSD-3-Clause](https://spdx.org/licenses/BSD-3-Clause.html)               | https://github.com/pypa/packaging            |
-| pluggy             | 1.3.0     | [MIT License](https://spdx.org/licenses/MIT.html)                        | https://github.com/pytest-dev/pluggy         |
-| pytest             | 7.4.2     | [MIT License](https://spdx.org/licenses/MIT.html)                        | https://docs.pytest.org/en/latest/           |
+| msgpack            | 1.1.0     | [Apache-2.0 License](http://www.apache.org/licenses/LICENSE-2.0)         | https://msgpack.org/                         |
+| numpy              | 1.26.4    | [BSD-3-Clause License](https://spdx.org/licenses/BSD-3-Clause.html)      | https://www.numpy.org                        |
+| packaging          | 24.1      | [Apache-2.0 License](http://www.apache.org/licenses/LICENSE-2.0); [BSD-3-Clause](https://spdx.org/licenses/BSD-3-Clause.html)               | https://github.com/pypa/packaging            |
+| pluggy             | 1.5.0     | [MIT License](https://spdx.org/licenses/MIT.html)                        | https://github.com/pytest-dev/pluggy         |
+| pytest             | 7.4.4     | [MIT License](https://spdx.org/licenses/MIT.html)                        | https://docs.pytest.org/en/latest/           |
 | pytest-cov         | 4.1.0     | [MIT License](https://spdx.org/licenses/MIT.html)                        | https://github.com/pytest-dev/pytest-cov     |
-| requests           | 2.31.0    | [Apache-2.0 License](http://www.apache.org/licenses/LICENSE-2.0)         | https://requests.readthedocs.io              |
-| scansegmentdecoding   | 2.0.4     | [MIT License](https://spdx.org/licenses/MIT.html)                        | https://github.com/SICKAG/scansegmentdecoding |
-| tomli              | 2.0.1     | [MIT License](https://spdx.org/licenses/MIT.html)                        | https://github.com/hukkin/tomli              |
-| urllib3            | 2.0.6   | [MIT License](https://spdx.org/licenses/MIT.html)                        | https://urllib3.readthedocs.io/              |
+| requests           | 2.32.3    | [Apache-2.0 License](http://www.apache.org/licenses/LICENSE-2.0)         | https://requests.readthedocs.io              |
+| urllib3            | 2.2.3     | [MIT License](https://spdx.org/licenses/MIT.html)                        | https://github.com/urllib3/urllib3           |

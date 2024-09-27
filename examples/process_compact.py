@@ -1,8 +1,8 @@
 #
-# Copyright (c) 2023 SICK AG
+# Copyright (c) 2023-2024 SICK AG
 # SPDX-License-Identifier: MIT
 #
-# This program receives scan segments in compact format.
+# This program receives scan segments in Compact format.
 # The received data consists of a list of segments where
 # each segment is represented as a dictionary, a list
 # with frame counters and a list with segment counters
@@ -15,19 +15,46 @@
 # first scan of the first module are retrieved and printed.
 
 import numpy as np
-import api.compact as CompactApi
+import scansegmentapi.compact as CompactApi
+from scansegmentapi.tcp_handler import TCPHandler
+from scansegmentapi.compact_stream_extractor import CompactStreamExtractor
+from scansegmentapi.udp_handler import UDPHandler
+
+# Port used for data streaming. Enter the port configured in your device.
+PORT = 2115
+
+# If UDP is configured this should be the IP of the receiver.
+# If TCP is configured this should be the IP of the SICK device.
+IP = "192.168.0.100"
+
+# Select with which transport protocol the data should be received. Select "TCP" or "UDP".
+TRANSPORT_PROTOCOL = "UDP"
 
 if __name__ == "__main__":
-    receiver = CompactApi.Receiver(port=2115, host="192.168.0.100")
-    (segments, frameNumbers, segmentCounters) = receiver.receiveSegments(200)
-    receiver.closeConnection()
+    if "UDP" == TRANSPORT_PROTOCOL:
+        transportLayer = UDPHandler(IP, PORT, 65535)
+    else:
+        streamExtractor = CompactStreamExtractor()
+        # See documentation of the buffer_size argument of the TCP handler for the selection of a
+        # suitable value
+        transportLayer = TCPHandler(streamExtractor, IP, PORT, 1024)
 
-    idx = np.where(np.array(segmentCounters) == 2) # find indices of all segments with segmentCounter == 2
-    allSeg2 = np.array(segments)[idx] # extract all segments with segmentCounter == 2
+    receiver = CompactApi.Receiver(transportLayer)
+    (segments, frameNumbers, segmentCounters) = receiver.receive_segments(200)
+    receiver.close_connection()
 
-    for segment in allSeg2:
-        frameNumber = segment["Modules"][0]["FrameNumber"] # extract the frame number of the first module in that segment
-        segmentCounter = segment["Modules"][0]["SegmentCounter"] # extract the segment counter of the first module in that segment
-        startAngle = segment["Modules"][0]["ThetaStart"][0] # extract the start angle of the first scan of the first module in that segment
-        someDistance = segment["Modules"][0]["SegmentData"][0]["Distance"][0][5] # extract the distance measurement of the first echo of the 6th beam of the first scan of the first module in that segment
-        print(f"frameNumber = {frameNumber} segmentCounter = {segmentCounter} startAngle = {np.rad2deg(startAngle)} someDistance = {someDistance}")
+    # find indices of all segments with frameNumber % 5 == 0
+    idx = np.where(np.array(frameNumbers) % 5 == 0)
+    segmentsFrameNumberMod5 = np.array(segments)[idx][:5]  # extract the first 5 segments with frameNumber % 5 == 0
+
+    for segment in segmentsFrameNumberMod5:
+        # extract the frame number of the first module in that segment
+        frameNumber = segment["Modules"][0]["FrameNumber"]
+        # extract the segment counter of the first module in that segment
+        segmentCounter = segment["Modules"][0]["SegmentCounter"]
+        # extract the start angle of the first scan of the first module in that segment
+        startAngle = segment["Modules"][0]["ThetaStart"][0]
+        # extract the distance measurement of the first echo of the 6th beam of the first scan of the first module in that segment
+        someDistance = segment["Modules"][0]["SegmentData"][0]["Distance"][0][5]
+        print(
+            f"frameNumber = {frameNumber} segmentCounter = {segmentCounter} startAngle = {np.rad2deg(startAngle)} someDistance = {someDistance}")

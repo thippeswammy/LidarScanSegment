@@ -1,0 +1,43 @@
+[sensor]
+ip = "192.168.0.168"
+port = 2112
+
+[display]
+
+# max display distance (mm)
+max = 5000
+
+# size per one grid arc (mm)
+grid = 1000
+
+# angle resolution (degree)
+# lower resolution give higher result
+# recommended value: 0 or 1
+resolution = 1
+
+# sensor size (radius, in mm)
+sensor_size = 80
+
+# margin around the sensor view (in pixel)
+margin = 30
+
+[detect]
+
+# minimum point detected in a zone for a zone to be triggered
+count = 4
+
+# list of danger zones
+danger = [
+    [-400, 1100, 0, 2100],
+    [-400, 2100, 0, 3100],
+    [0, 1100, 400, 2100],
+    [0, 2100, 400, 3100]
+]
+
+# list of warning zones
+warning = [
+    [-800, 1100, -400, 2100],
+    [-800, 2100, -400, 3100],
+    [400, 1100, 800, 2100],
+    [400, 2100, 800, 3100],
+]

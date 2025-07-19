@@ -1,5 +1,7 @@
 from math import sin, cos, pi
+
 from gfx_view import deg2rad, in_rec, WARNING, DANGER, SAFE
+
 
 class gfxModel:
     def __init__(self, config):
@@ -40,7 +42,7 @@ class gfxModel:
         channel = result.channel['DIST1']
 
         # value = A*x + B
-        A = channel['scale_factor']*cos(result.layer_angle*pi/180)
+        A = channel['scale_factor'] * cos(result.layer_angle * pi / 180)
         B = channel['scale_offset']
 
         # extracting the data
@@ -48,16 +50,16 @@ class gfxModel:
         for i in range(0, channel['length']):
             x = int(channel['data'][i], 16)
             if x >= 16:  # value under 16 is invalid data
-                value = (A*x + B)
-                phi = channel['angle_start'] + i*channel['angle_step']
+                value = (A * x + B)
+                phi = channel['angle_start'] + i * channel['angle_step']
                 points.append((value, phi))
 
         # side effect, update config
         self.angle = (
             channel['angle_start'],
-            channel['angle_start'] + channel['length']*channel['angle_step']
+            channel['angle_start'] + channel['length'] * channel['angle_step']
         )
-        self.min = A*16 + B
+        self.min = A * 16 + B
         return points
 
     # take avarage value of one small cone
@@ -80,15 +82,15 @@ class gfxModel:
                 i += 1
                 if i >= len(points):
                     break
-            new_points.append((sum_value/count, sum_phi/count))
+            new_points.append((sum_value / count, sum_phi / count))
         return new_points
 
     def detect_zone(self):
         points = list()
         for value, angle in self.data:
             phi = deg2rad(angle)
-            x = value*cos(phi)
-            y = value*sin(phi)
+            x = value * cos(phi)
+            y = value * sin(phi)
             points.append((x, y))
         zones = list()
         self.reset_detect_count()

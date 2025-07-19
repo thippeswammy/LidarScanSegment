@@ -1,10 +1,11 @@
-from tkinter import Tk, Canvas, Frame, BOTH, ARC, PIESLICE
 from math import sin, cos, pi, tan
+from tkinter import Canvas, BOTH, ARC, PIESLICE
 
 # color
 WARNING = '#ff0'
 DANGER = '#f44'
 SAFE = '#4f4'
+
 
 class gfxView():
     def __init__(self, tk, model):
@@ -45,8 +46,8 @@ class gfxView():
         H -= self.M
 
         # radius
-        if 2*H > W:
-            self.R = W/2
+        if 2 * H > W:
+            self.R = W / 2
         else:
             self.R = H
 
@@ -56,10 +57,10 @@ class gfxView():
         self.center = (self.x0, self.y0)
 
         # frame of sensor view
-        self.frame = (self.M, self.M, 2*self.R-self.M, self.R)
+        self.frame = (self.M, self.M, 2 * self.R - self.M, self.R)
 
         # scale_factor
-        self.scale = (self.R-self.M) / self.model.max
+        self.scale = (self.R - self.M) / self.model.max
 
         # clear canvas
         self.canvas.delete('all')
@@ -106,38 +107,38 @@ class gfxView():
             poly.extend((x0, y0))
         poly.extend((xp1, yp1))
         self.canvas.create_polygon(*poly, fill=self.model.detect_color)
-        self.arc(min*self.scale, a0, a1, style=PIESLICE,
+        self.arc(min * self.scale, a0, a1, style=PIESLICE,
                  fill='white', outline='')
 
     # draw grid on the sensor view
     def draw_grid(self):
         for i in range(0, self.model.max, self.model.grid):
-            r_i = (i + self.model.grid)*self.scale
-            l_i = (i + self.model.grid)*1e-3
-            self.canvas.create_text(self.R+r_i, self.R+20, text=str(l_i))
-            self.canvas.create_text(self.R-r_i, self.R+20, text=str(l_i))
+            r_i = (i + self.model.grid) * self.scale
+            l_i = (i + self.model.grid) * 1e-3
+            self.canvas.create_text(self.R + r_i, self.R + 20, text=str(l_i))
+            self.canvas.create_text(self.R - r_i, self.R + 20, text=str(l_i))
             self.arc(r_i, 0, 180, style=ARC)
 
     # check intersect of a line from the center to the edge of the sensor view
     def angle_intersect(self, a):
         x0, y0, x1, y1 = self.frame
         t = tan(deg2rad(a))
-        xcen = (x1+x0)/2
-        xlen = (x1-x0)/2
-        x = xcen*(1 + 1/t)
+        xcen = (x1 + x0) / 2
+        xlen = (x1 - x0) / 2
+        x = xcen * (1 + 1 / t)
         if x < x0:
-            return x0, y1 + xlen*t, x
+            return x0, y1 + xlen * t, x
         if x > x1:
-            return x1, y1 - xlen*t, x
+            return x1, y1 - xlen * t, x
         return x, y0, x
 
     # draw rectangle of detection zone
     def rec_zone(self, zone, *args, **kwargs):
         x0, y0, x1, y1 = zone
-        nx0 = self.R + x0*self.scale
-        nx1 = self.R + x1*self.scale
-        ny0 = self.R - y0*self.scale
-        ny1 = self.R - y1*self.scale
+        nx0 = self.R + x0 * self.scale
+        nx1 = self.R + x1 * self.scale
+        ny0 = self.R - y0 * self.scale
+        ny1 = self.R - y1 * self.scale
         self.rec(nx0, ny0, nx1, ny1, *args, **kwargs)
 
     # draw line
@@ -165,7 +166,8 @@ class gfxView():
     # convert from polar to cartesian coordinate
     def pol2car(self, r, angle):
         phi = deg2rad(angle)
-        return self.x0 + r*cos(phi), self.y0 - r*sin(phi)
+        return self.x0 + r * cos(phi), self.y0 - r * sin(phi)
+
 
 # degree to radian
 
@@ -173,11 +175,13 @@ class gfxView():
 def deg2rad(a):
     return a * pi / 180
 
+
 # center coordinate to rectangular coordinate
 
 
 def cen2rec(x0, y0, r):
     return x0 - r, y0 - r, x0 + r, y0 + r
+
 
 # check if point lie in a rectangle
 
@@ -185,8 +189,9 @@ def cen2rec(x0, y0, r):
 def in_rec(x, y, x0, y0, x1, y1):
     return in_range(x, x0, x1) and in_range(y, y0, y1)
 
+
 # check if value is between two order value
 
 
 def in_range(x, x0, x1):
-    return x >= x0 and x <= x1
+    return x0 <= x <= x1

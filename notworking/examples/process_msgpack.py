@@ -26,7 +26,7 @@ TRANSPORT_PROTOCOL = "UDP"
 import numpy as np
 import scansegmentapi.msgpack as MSGPACKApi
 from scansegmentapi.tcp_handler import TCPHandler
-from scansegmentapi.msgpack_stream_extractor import MsgpackStreamExtractor
+from notworking.scansegmentapi.msgpack_stream_extractor import MsgpackStreamExtractor
 from scansegmentapi.udp_handler import UDPHandler
 
 if __name__ == "__main__":

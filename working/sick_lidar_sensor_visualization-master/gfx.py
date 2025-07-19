@@ -1,9 +1,10 @@
-from tkinter import Tk, Canvas, Frame, BOTH, ARC
-from math import sin, cos, pi
-from gfx_view import gfxView
-from gfx_model import gfxModel
+from tkinter import Tk
 
-class gfxControl():
+from gfx_model import gfxModel
+from gfx_view import gfxView
+
+
+class gfxControl:
     def __init__(self, config):
         self.tk = Tk()
         self.tk.protocol("WM_DELETE_WINDOW", self.on_closing)

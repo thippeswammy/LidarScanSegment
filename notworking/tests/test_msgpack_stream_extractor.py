@@ -1,7 +1,7 @@
 import math
 import zlib
 import pytest
-from scansegmentapi import msgpack_stream_extractor as se
+from notworking.scansegmentapi import msgpack_stream_extractor as se
 
 
 def make_msgpack_telegram(msgpack_buffer):

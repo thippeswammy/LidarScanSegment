@@ -1,7 +1,7 @@
 import socket
-import struct
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.animation import FuncAnimation
 
 # Replace with the IP and port of your SICK LiDAR

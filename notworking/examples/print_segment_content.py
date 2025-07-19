@@ -21,7 +21,7 @@ import scansegmentapi.msgpack as MsgpackApi
 import scansegmentapi.compact as CompactApi
 from scansegmentapi.tcp_handler import TCPHandler
 from scansegmentapi.compact_stream_extractor import CompactStreamExtractor
-from scansegmentapi.msgpack_stream_extractor import MsgpackStreamExtractor
+from notworking.scansegmentapi.msgpack_stream_extractor import MsgpackStreamExtractor
 from scansegmentapi.udp_handler import UDPHandler
 
 import numpy as np

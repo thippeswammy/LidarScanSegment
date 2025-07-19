@@ -1,7 +1,7 @@
 import socket
-import inspect
-from time import sleep, time_ns
 from struct import unpack
+from time import sleep
+
 
 # main class to communicate with the MRS6000 sensor
 class MRS6000:
@@ -22,7 +22,7 @@ class MRS6000:
         while True:
             data = self.socket.recv(8192)
             if End in data:
-                total_data.append(data[:data.find(End)+1])
+                total_data.append(data[:data.find(End) + 1])
                 break
             total_data.append(data)
         packet = CoLaBPacket(b''.join(total_data))
@@ -88,14 +88,14 @@ class CoLaBPacket:
 
             self.telegram_counter = self.next_int()
             self.scan_counter = self.next_int()
-            self.time_since_startup = self.next_int()/1e6
-            self.time_of_transmission = self.next_int()/1e6
+            self.time_since_startup = self.next_int() / 1e6
+            self.time_of_transmission = self.next_int() / 1e6
             self._status_of_digital_input = self.next_pair()
             self._status_of_digital_output = self.next_pair()
-            self.layer_angle = self.next_int()/200
+            self.layer_angle = self.next_int() / 200
 
-            self.scan_frequency = self.next_int()/100
-            self.measurement_frequency = self.next_int()/100
+            self.scan_frequency = self.next_int() / 100
+            self.measurement_frequency = self.next_int() / 100
 
             self._amount_of_encoder = self.next_int()
             if self._amount_of_encoder > 0:
@@ -123,9 +123,9 @@ class CoLaBPacket:
 
         if self.type == 'sRA' and self.command == 'LMPoutputRange':
             self.number_of_sector = self.next_int()
-            self.step_angle = self.next_int()/1e4
-            self.start_angle = self.next_int()/1e4
-            self.end_angle = self.next_int()/1e4
+            self.step_angle = self.next_int() / 1e4
+            self.start_angle = self.next_int() / 1e4
+            self.end_angle = self.next_int() / 1e4
 
         self.remain = self.next_remain()
 
@@ -134,8 +134,8 @@ class CoLaBPacket:
         channel = dict()
         channel['scale_factor'] = self.next_float()
         channel['scale_offset'] = self.next_float()
-        channel['angle_start'] = self.next_int()/1e4
-        channel['angle_step'] = self.next_int()/1e4
+        channel['angle_start'] = self.next_int() / 1e4
+        channel['angle_step'] = self.next_int() / 1e4
         channel['length'] = self.next_int()
         channel['data'] = self.next(channel['length'])
         return name, channel
@@ -145,11 +145,12 @@ class CoLaBPacket:
 
     def next_float(self):
         return unpack('!f', bytes.fromhex(self.next()))[0]
+
     def next_int(self):
         return int(self.next(), 16)
 
     def next_remain(self):
-        return self.next(len(self._data)-self._i)
+        return self.next(len(self._data) - self._i)
 
     def next(self, size=1):
         channel = self._data[self._i] if size == 1 else self._data[self._i:self._i + size]

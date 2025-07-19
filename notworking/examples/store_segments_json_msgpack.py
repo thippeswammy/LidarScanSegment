@@ -10,7 +10,7 @@ import json
 from json import JSONEncoder
 import scansegmentapi.msgpack as MSGPACKApi
 from scansegmentapi.tcp_handler import TCPHandler
-from scansegmentapi.msgpack_stream_extractor import MsgpackStreamExtractor
+from notworking.scansegmentapi.msgpack_stream_extractor import MsgpackStreamExtractor
 from scansegmentapi.udp_handler import UDPHandler
 
 # Port used for data streaming. Enter the port configured in your device.

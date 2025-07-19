@@ -1,13 +1,17 @@
-from gfx import gfxControl
-from gfx_model import DANGER, WARNING, SAFE
-from pidar import MRS6000
+from threading import Thread
 from time import sleep
+
 import toml
 from playsound import playsound
-from threading import Thread
+
+from gfx import gfxControl
+from gfx_model import DANGER, SAFE
+from pidar import MRS6000
+
 
 def sound_alarm(name):
-    playsound(name+'.wav')
+    playsound(name + '.wav')
+
 
 def main():
     config = toml.load('config.toml')
@@ -31,6 +35,7 @@ def main():
             alarm.start()
         sleep(0.1)
     sensor.end_scan()
+
 
 if __name__ == '__main__':
     main()

@@ -1,3 +1,10 @@
 # Default ignored files
 /shelf/
 /workspace.xml
+/.name
+vcs.xml
+misc.xml
+modules.xml
+workspace.xml
+ScanSegmentAPI.iml
+inspectionProfiles
